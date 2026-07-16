@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Business Dashboard & POS</title>
+    <style>
+        :root {
+            --primary: #0056b3;
+            --secondary: #f8f9fa;
+            --background: #e9ecef;
+            --card-bg: #ffffff;
+            --text-main: #212529;
+            --border: #ced4da;
+            --danger: #dc3545;
+            --success: #28a745;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--background);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .dashboard-container {
+            width: 100%;
+            max-width: 1100px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            padding: 25px;
+            border: 1px solid var(--border);
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+            text-align: center;
+        }
+
+        h2 {
+            margin-top: 0;
+            color: var(--primary);
+            font-size: 1.4rem;
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        h3 {
+            font-size: 1.1rem;
+            color: #495057;
+            margin-bottom: 10px;
+            margin-top: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid var(--border);
+            border-radius: 5px;
+            box-sizing: border-box;
+            font-family: inherit;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .input-group input { margin-bottom: 0; }
+
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+
+        button:hover { background-color: #004494; }
+        .btn-add { background-color: var(--success); white-space: nowrap; }
+        .btn-add:hover { background-color: #218838; }
+        .btn-remove { background-color: var(--danger); padding: 5px 10px; font-size: 0.8rem; }
+        .btn-remove:hover { background-color: #c82333; }
+        .btn-approve { background-color: #198754; width: 100%; padding: 15px; font-size: 1.1rem; margin-top: 10px; animation: pulse 2s infinite; }
+        .btn-approve:hover { background-color: #157347; }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(25, 135, 84, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(25, 135, 84, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(25, 135, 84, 0); }
+        }
+
+        /* List Styles for Records */
+        .record-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid var(--border);
+            border-radius: 5px;
+            background-color: var(--secondary);
+        }
+
+        .record-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .record-item:last-child { border-bottom: none; }
+        .empty-text { padding: 10px 15px; color: #6c757d; font-style: italic; font-size: 0.9rem; }
+
+        /* QR Section Styles */
+        .qr-section { text-align: center; display: flex; flex-direction: column; align-items: center; }
+        
+        #qr-image-container {
+            width: 220px; height: 220px;
+            border: 2px dashed var(--border);
+            display: flex; align-items: center; justify-content: center;
+            margin: 20px 0; background-color: #f9f9f9; border-radius: 10px;
+        }
+
+        #qr-code { max-width: 100%; max-height: 100%; display: none; border-radius: 5px; }
+
+        .timer-display {
+            font-size: 2.2rem; font-weight: bold; color: var(--danger);
+            margin-bottom: 15px; font-family: monospace;
+        }
+
+        .hidden { display: none !important; }
+
+        /* BillDesk Style Success Overlay */
+        .success-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+            display: flex; justify-content: center; align-items: center;
+            z-index: 1000;
+        }
+
+        .success-card {
+            background: white; padding: 40px; border-radius: 12px;
+            text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transform: scale(0.8); animation: popIn 0.3s forwards cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes popIn { to { transform: scale(1); } }
+
+        .checkmark-circle {
+            width: 80px; height: 80px; border-radius: 50%;
+            background: #28a745; margin: 0 auto 20px;
+            display: flex; justify-content: center; align-items: center;
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.4);
+        }
+
+        .checkmark-circle::after {
+            content: ''; width: 20px; height: 40px;
+            border: solid white; border-width: 0 5px 5px 0;
+            transform: rotate(45deg); margin-top: -10px;
+        }
+
+        .success-card h2 { border: none; padding: 0; margin-bottom: 10px; color: #333; }
+        .success-card p { color: #666; margin: 0; font-size: 1.1rem; }
+        .success-amount { font-size: 2rem; font-weight: bold; color: #28a745; margin: 15px 0; }
+
+        /* A5 Print Styles */
+        #printable-challan { display: none; }
+
+        @media print {
+            @page { size: A5; margin: 10mm; }
+            body * { visibility: hidden; }
+            #printable-challan, #printable-challan * { visibility: visible; }
+            #printable-challan {
+                display: block; position: absolute;
+                left: 0; top: 0; width: 100%;
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                color: black;
+            }
+            .challan-header {
+                text-align: center; border-bottom: 2px solid black;
+                padding-bottom: 15px; margin-bottom: 20px;
+            }
+            .challan-header h1 { margin: 0; font-size: 22px; text-transform: uppercase; }
+            .challan-header p { margin: 5px 0 0 0; font-size: 14px; }
+            .challan-body { margin-top: 20px; }
+            .challan-row {
+                display: flex; justify-content: space-between;
+                padding: 10px 0; border-bottom: 1px dashed #ccc; font-size: 16px;
+            }
+            .challan-footer {
+                margin-top: 40px; text-align: center; font-size: 12px;
+                color: #555;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard-container">
+        
+        <!-- Header -->
+        <div class="card full-width">
+            <h1 style="margin: 0; color: var(--primary);">Multi-Business Dashboard</h1>
+            <p style="margin: 5px 0 0 0; color: #666;">Ledger Records & Instant POS Gateway</p>
+        </div>
+
+        <!-- Section 1: Customer Ledger & Wantings -->
+        <div class="card">
+            <h2>1. Ledger & Wantings</h2>
+            
+            <label for="customer-name">Customer / Record Reference</label>
+            <input type="text" id="customer-name" placeholder="e.g., Rakesh (Credit) or Distributor">
+
+            <!-- Credit Products -->
+            <h3>Credit Items Log</h3>
+            <div class="input-group">
+                <input type="text" id="credit-product" placeholder="Product Name" style="flex: 2;">
+                <input type="number" id="credit-amount" placeholder="Amt (₹)" style="flex: 1;">
+                <button class="btn-add" onclick="addCredit()">+ Add</button>
+            </div>
+            <ul id="credit-list" class="record-list">
+                <li class="empty-text" id="credit-empty">No credit items added yet.</li>
+            </ul>
+
+            <!-- Orders / Wantings -->
+            <h3 style="margin-top: 30px;">Orders / Wantings Log</h3>
+            <div class="input-group">
+                <input type="text" id="wanting-product" placeholder="Product Name" style="flex: 2;">
+                <input type="number" id="wanting-qty" placeholder="Qty" style="flex: 1;">
+                <button class="btn-add" onclick="addWanting()">+ Add</button>
+            </div>
+            <ul id="wanting-list" class="record-list">
+                <li class="empty-text" id="wanting-empty">No wantings added yet.</li>
+            </ul>
+        </div>
+
+        <!-- Section 2: Instant Payment -->
+        <div class="card qr-section">
+            <h2 style="width: 100%; text-align: left;">2. Instant Payment</h2>
+
+            <div style="width: 100%; text-align: left;">
+                <label for="bill-amount">Amount to Receive (₹)</label>
+                <input type="number" id="bill-amount" placeholder="e.g., 250.00" style="font-size: 1.5rem; font-weight: bold; color: var(--success); height: 50px;">
+
+                <div style="display: flex; gap: 15px; margin-top: 15px;">
+                    <div style="flex: 1;">
+                        <label for="payment-mode">Payment Mode:</label>
+                        <select id="payment-mode" onchange="togglePaymentMode()">
+                            <option value="UPI QR">UPI QR</option>
+                            <option value="Cash">Cash</option>
+                        </select>
+                    </div>
+                    <div style="flex: 1;">
+                        <label for="upi-selector">Business Account:</label>
+                        <select id="upi-selector">
+                            <option value="8918810396@okbizaxis|M S SHIVAM MEDICAL HALL">M/S SHIVAM MEDICAL HALL</option>
+                            <option value="sagnikroy.nakpul-2@oksbi|SAGNIK ROY">Pratima's Cyber Cafe</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div id="qr-image-container">
+                <span id="qr-placeholder" style="color: #999;">Enter amount to generate QR</span>
+                <img id="qr-code" src="" alt="Payment QR Code">
+            </div>
+
+            <div id="timer-container" class="hidden">
+                <p style="margin: 0; font-weight: bold;">QR Expires In:</p>
+                <div class="timer-display" id="timer">05:00</div>
+            </div>
+
+            <button id="btn-generate" onclick="generateQR()" style="width: 100%; padding: 15px; font-size: 1.1rem;">Generate Payment QR</button>
+            <button id="btn-approve" class="btn-approve hidden" onclick="processPayment()">Payment Approved</button>
+            <button id="btn-regenerate" class="hidden" onclick="generateQR()" style="background-color: var(--danger); width: 100%; padding: 15px; font-size: 1.1rem; margin-top: 10px;">QR Expired - Generate Again</button>
+        </div>
+    </div>
+
+    <!-- BillDesk Style Success Overlay -->
+    <div id="success-overlay" class="success-overlay hidden">
+        <div class="success-card">
+            <div class="checkmark-circle"></div>
+            <h2>Payment Successful</h2>
+            <p>Transaction captured successfully.</p>
+            <div class="success-amount" id="success-amount-display">₹0.00</div>
+            <p style="font-size: 0.85rem; color: #999;">Generating Challan...</p>
+        </div>
+    </div>
+
+    <!-- A5 Printable Challan Structure -->
+    <div id="printable-challan">
+        <div class="challan-header">
+            <h1 id="challan-title">M/S SHIVAM MEDICAL HALL</h1>
+            <p><strong>Payment Receipt / Challan</strong></p>
+        </div>
+        <div class="challan-body">
+            <div class="challan-row">
+                <span><strong>Date & Time:</strong></span>
+                <span id="challan-date"></span>
+            </div>
+            <div class="challan-row">
+                <span><strong>Receipt No:</strong></span>
+                <span id="challan-receipt"></span>
+            </div>
+            <div class="challan-row">
+                <span><strong>Payment Mode:</strong></span>
+                <span id="challan-mode"></span>
+            </div>
+            <div class="challan-row" style="background-color: #f8f9fa; padding: 15px; border: 1px solid #000; margin-top: 20px;">
+                <span><strong>Amount Received:</strong></span>
+                <span style="font-size: 20px; font-weight: bold;">₹<span id="challan-amount"></span></span>
+            </div>
+        </div>
+        <div class="challan-footer">
+            <p id="challan-footer-msg">Thank you for visiting M/S Shivam Medical Hall.</p>
+            <p><em>*This is a computer-generated receipt.</em></p>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // LEDGER LOGIC
+        // ==========================================
+        function addCredit() {
+            const productInput = document.getElementById('credit-product');
+            const amountInput = document.getElementById('credit-amount');
+            
+            const productName = productInput.value.trim();
+            const amount = amountInput.value.trim();
+
+            if (productName === '' || amount === '') {
+                alert('Please enter both Product Name and Amount.');
+                return;
+            }
+
+            const list = document.getElementById('credit-list');
+            document.getElementById('credit-empty').style.display = 'none';
+
+            const li = document.createElement('li');
+            li.className = 'record-item';
+            li.innerHTML = `
+                <span>${productName} <strong style="color:var(--danger)">[₹${amount}]</strong></span>
+                <button class="btn-remove" onclick="this.parentElement.remove(); checkEmpty('credit-list', 'credit-empty')">Remove</button>
+            `;
+            
+            list.appendChild(li);
+            productInput.value = ''; 
+            amountInput.value = '';
+        }
+
+        function addWanting() {
+            const productInput = document.getElementById('wanting-product');
+            const qtyInput = document.getElementById('wanting-qty');
+            
+            const productName = productInput.value.trim();
+            const qty = qtyInput.value.trim();
+
+            if (productName === '' || qty === '') {
+                alert('Please enter both Product Name and Quantity.');
+                return;
+            }
+
+            const list = document.getElementById('wanting-list');
+            document.getElementById('wanting-empty').style.display = 'none';
+
+            const li = document.createElement('li');
+            li.className = 'record-item';
+            li.innerHTML = `
+                <span>${productName} <strong>(Qty: ${qty})</strong></span>
+                <button class="btn-remove" onclick="this.parentElement.remove(); checkEmpty('wanting-list', 'wanting-empty')">Remove</button>
+            `;
+            
+            list.appendChild(li);
+            productInput.value = ''; 
+            qtyInput.value = '';
+        }
+
+        function checkEmpty(listId, emptyId) {
+            if (document.getElementById(listId).children.length <= 1) {
+                document.getElementById(emptyId).style.display = 'block';
+            }
+        }
+
+        // ==========================================
+        // UI TOGGLE: CASH VS UPI QR
+        // ==========================================
+        let countdownInterval;
+        const TIME_LIMIT = 5 * 60; 
+
+        function togglePaymentMode() {
+            const mode = document.getElementById('payment-mode').value;
+            const qrContainer = document.getElementById('qr-image-container');
+            const timerContainer = document.getElementById('timer-container');
+            const generateBtn = document.getElementById('btn-generate');
+            const approveBtn = document.getElementById('btn-approve');
+            const regenerateBtn = document.getElementById('btn-regenerate');
+
+            clearInterval(countdownInterval); // Stop timer if running
+
+            if (mode === 'Cash') {
+                // Hide QR elements, show Direct Approve
+                qrContainer.style.display = 'none';
+                timerContainer.classList.add('hidden');
+                generateBtn.classList.add('hidden');
+                regenerateBtn.classList.add('hidden');
+                
+                approveBtn.classList.remove('hidden');
+                approveBtn.textContent = "Process Cash Payment";
+            } else {
+                // Reset to UPI QR setup
+                qrContainer.style.display = 'flex';
+                generateBtn.classList.remove('hidden');
+                approveBtn.classList.add('hidden');
+                approveBtn.textContent = "Payment Approved";
+                timerContainer.classList.add('hidden');
+                regenerateBtn.classList.add('hidden');
+                
+                document.getElementById('qr-code').style.display = 'none';
+                document.getElementById('qr-placeholder').style.display = 'block';
+                document.getElementById('qr-placeholder').innerHTML = "Enter amount to generate QR";
+                document.getElementById('qr-placeholder').style.color = "#999";
+            }
+        }
+
+        // ==========================================
+        // QR GENERATOR
+        // ==========================================
+        function generateQR() {
+            const amount = document.getElementById('bill-amount').value;
+            const upiSelection = document.getElementById('upi-selector').value;
+            
+            if (!amount || amount <= 0) {
+                alert("Please enter a valid Amount first.");
+                return;
+            }
+
+            const [upiID, payeeName] = upiSelection.split('|');
+            const upiString = `upi://pay?pa=${upiID}&pn=${encodeURIComponent(payeeName)}&am=${amount}&cu=INR`;
+            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(upiString)}`;
+
+            document.getElementById('qr-code').src = qrUrl;
+            document.getElementById('qr-code').style.display = 'block';
+            document.getElementById('qr-placeholder').style.display = 'none';
+
+            document.getElementById('btn-generate').classList.add('hidden');
+            document.getElementById('btn-regenerate').classList.add('hidden');
+            
+            document.getElementById('timer-container').classList.remove('hidden');
+            document.getElementById('btn-approve').classList.remove('hidden');
+
+            startTimer(TIME_LIMIT);
+        }
+
+        function startTimer(duration) {
+            clearInterval(countdownInterval); 
+            let timer = duration;
+            const display = document.getElementById('timer');
+
+            countdownInterval = setInterval(function () {
+                let minutes = parseInt(timer / 60, 10);
+                let seconds = parseInt(timer % 60, 10);
+                minutes = minutes < 10 ? "0" + minutes : minutes;
+                seconds = seconds < 10 ? "0" + seconds : seconds;
+                display.textContent = minutes + ":" + seconds;
+
+                if (--timer < 0) expireQR();
+            }, 1000);
+        }
+
+        function expireQR() {
+            clearInterval(countdownInterval);
+            
+            document.getElementById('qr-code').style.display = 'none';
+            document.getElementById('qr-code').src = ''; 
+            
+            const placeholder = document.getElementById('qr-placeholder');
+            placeholder.innerHTML = "QR EXPIRED";
+            placeholder.style.color = "var(--danger)";
+            placeholder.style.display = 'block';
+
+            document.getElementById('timer-container').classList.add('hidden');
+            document.getElementById('btn-approve').classList.add('hidden');
+            document.getElementById('btn-regenerate').classList.remove('hidden');
+        }
+
+        // ==========================================
+        // PAYMENT APPROVAL & DYNAMIC CHALLAN
+        // ==========================================
+        function processPayment() {
+            const amount = document.getElementById('bill-amount').value;
+            if (!amount || amount <= 0) {
+                alert("Please enter a valid Amount first.");
+                return;
+            }
+
+            clearInterval(countdownInterval); 
+
+            const paymentMode = document.getElementById('payment-mode').value;
+            const upiSelect = document.getElementById('upi-selector');
+            const upiValue = upiSelect.value;
+            const [upiID, payeeName] = upiValue.split('|');
+            
+            // 1. Dynamic Letterhead Logic Based on Selected Business
+            const challanTitle = document.getElementById('challan-title');
+            const challanFooterMsg = document.getElementById('challan-footer-msg');
+            
+            if (upiID === 'sagnikroy.nakpul-2@oksbi') {
+                challanTitle.textContent = "PRATIMA'S ONLINE CYBER CAFE & XEROX CENTER";
+                challanFooterMsg.textContent = "Thank you for visiting Pratima's Online Cyber Cafe & Xerox Center.";
+            } else {
+                challanTitle.textContent = "M/S SHIVAM MEDICAL HALL";
+                challanFooterMsg.textContent = "Thank you for visiting M/S Shivam Medical Hall.";
+            }
+
+            // 2. Populate Success Overlay
+            document.getElementById('success-amount-display').textContent = `₹${parseFloat(amount).toFixed(2)}`;
+            document.getElementById('success-overlay').classList.remove('hidden');
+
+            // 3. Populate Challan Data
+            const now = new Date();
+            let receiptPrefix = (upiID === 'sagnikroy.nakpul-2@oksbi') ? "PCC-" : "SMH-";
+            const receiptNo = receiptPrefix + now.getFullYear() + (now.getMonth()+1).toString().padStart(2, '0') + Math.floor(1000 + Math.random() * 9000);
+            
+            document.getElementById('challan-date').textContent = now.toLocaleString();
+            document.getElementById('challan-receipt').textContent = receiptNo;
+            
+            // Strictly sets the invoice to "Cash" or "UPI QR" based on portal selection
+            document.getElementById('challan-mode').textContent = paymentMode; 
+            
+            document.getElementById('challan-amount').textContent = parseFloat(amount).toFixed(2);
+
+            // 4. Wait 3 seconds, hide overlay, print challan, and reset UI
+            setTimeout(() => {
+                document.getElementById('success-overlay').classList.add('hidden');
+                
+                // Reset the portal UI seamlessly
+                document.getElementById('bill-amount').value = '';
+                togglePaymentMode(); 
+
+                window.print(); 
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
