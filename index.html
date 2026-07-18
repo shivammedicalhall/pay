@@ -114,7 +114,6 @@
             100% { box-shadow: 0 0 0 0 rgba(25, 135, 84, 0); }
         }
 
-        /* List Styles for Records */
         .record-list {
             list-style: none;
             padding: 0;
@@ -137,7 +136,6 @@
         .record-item:last-child { border-bottom: none; }
         .empty-text { padding: 10px 15px; color: #6c757d; font-style: italic; font-size: 0.9rem; }
 
-        /* QR Section Styles */
         .qr-section { text-align: center; display: flex; flex-direction: column; align-items: center; }
         
         #qr-image-container {
@@ -156,7 +154,6 @@
 
         .hidden { display: none !important; }
 
-        /* BillDesk Style Success Overlay */
         .success-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
@@ -189,33 +186,44 @@
         .success-card p { color: #666; margin: 0; font-size: 1.1rem; }
         .success-amount { font-size: 2rem; font-weight: bold; color: #28a745; margin: 15px 0; }
 
-        /* A5 Print Styles */
+        /* A5 Print Styles - STRICTLY ONE PAGE */
         #printable-challan { display: none; }
 
         @media print {
             @page { size: A5; margin: 10mm; }
+            html, body {
+                height: 100%; 
+                margin: 0 !important; 
+                padding: 0 !important;
+                overflow: hidden; /* Prevents 2nd blank page */
+            }
             body * { visibility: hidden; }
             #printable-challan, #printable-challan * { visibility: visible; }
             #printable-challan {
                 display: block; position: absolute;
-                left: 0; top: 0; width: 100%;
+                left: 0; top: 0; width: 100%; height: 100%;
                 font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
                 color: black;
+                page-break-inside: avoid;
             }
             .challan-header {
                 text-align: center; border-bottom: 2px solid black;
-                padding-bottom: 15px; margin-bottom: 20px;
+                padding-bottom: 10px; margin-bottom: 15px;
             }
-            .challan-header h1 { margin: 0; font-size: 22px; text-transform: uppercase; }
-            .challan-header p { margin: 5px 0 0 0; font-size: 14px; }
-            .challan-body { margin-top: 20px; }
+            .challan-header h1 { margin: 0; font-size: 20px; text-transform: uppercase; }
+            .challan-header p { margin: 3px 0 0 0; font-size: 13px; }
+            .challan-body { margin-top: 15px; }
             .challan-row {
                 display: flex; justify-content: space-between;
-                padding: 10px 0; border-bottom: 1px dashed #ccc; font-size: 16px;
+                padding: 8px 0; border-bottom: 1px dashed #ccc; font-size: 14px;
+            }
+            .challan-row-highlight {
+                background-color: #f8f9fa; padding: 12px; border: 1px solid #000; 
+                margin-top: 15px; display: flex; justify-content: space-between;
             }
             .challan-footer {
-                margin-top: 40px; text-align: center; font-size: 12px;
-                color: #555;
+                margin-top: 25px; text-align: center; font-size: 11px;
+                color: #555; border-top: 1px solid #eee; padding-top: 10px;
             }
         }
     </style>
@@ -284,6 +292,10 @@
                         </select>
                     </div>
                 </div>
+
+                <!-- PURPOSE OF PAYMENT FIELD -->
+                <label for="payment-purpose" style="margin-top: 15px;">Purpose of Payment:</label>
+                <input type="text" id="payment-purpose" placeholder="e.g., Medicine purchase, Xerox, etc.">
             </div>
 
             <div id="qr-image-container">
@@ -332,14 +344,20 @@
                 <span><strong>Payment Mode:</strong></span>
                 <span id="challan-mode"></span>
             </div>
-            <div class="challan-row" style="background-color: #f8f9fa; padding: 15px; border: 1px solid #000; margin-top: 20px;">
+            <!-- PURPOSE OF PAYMENT INVOICE ROW -->
+            <div class="challan-row">
+                <span><strong>Purpose:</strong></span>
+                <span id="challan-purpose"></span>
+            </div>
+            
+            <div class="challan-row-highlight">
                 <span><strong>Amount Received:</strong></span>
-                <span style="font-size: 20px; font-weight: bold;">₹<span id="challan-amount"></span></span>
+                <span style="font-size: 18px; font-weight: bold;">₹<span id="challan-amount"></span></span>
             </div>
         </div>
         <div class="challan-footer">
-            <p id="challan-footer-msg">Thank you for visiting M/S Shivam Medical Hall.</p>
-            <p><em>*This is a computer-generated receipt.</em></p>
+            <p id="challan-footer-msg" style="margin-bottom: 2px;">Thank you for visiting M/S Shivam Medical Hall.</p>
+            <p style="margin: 0;"><em>*This is a computer-generated receipt.</em></p>
         </div>
     </div>
 
@@ -350,7 +368,6 @@
         function addCredit() {
             const productInput = document.getElementById('credit-product');
             const amountInput = document.getElementById('credit-amount');
-            
             const productName = productInput.value.trim();
             const amount = amountInput.value.trim();
 
@@ -368,16 +385,13 @@
                 <span>${productName} <strong style="color:var(--danger)">[₹${amount}]</strong></span>
                 <button class="btn-remove" onclick="this.parentElement.remove(); checkEmpty('credit-list', 'credit-empty')">Remove</button>
             `;
-            
             list.appendChild(li);
-            productInput.value = ''; 
-            amountInput.value = '';
+            productInput.value = ''; amountInput.value = '';
         }
 
         function addWanting() {
             const productInput = document.getElementById('wanting-product');
             const qtyInput = document.getElementById('wanting-qty');
-            
             const productName = productInput.value.trim();
             const qty = qtyInput.value.trim();
 
@@ -395,10 +409,8 @@
                 <span>${productName} <strong>(Qty: ${qty})</strong></span>
                 <button class="btn-remove" onclick="this.parentElement.remove(); checkEmpty('wanting-list', 'wanting-empty')">Remove</button>
             `;
-            
             list.appendChild(li);
-            productInput.value = ''; 
-            qtyInput.value = '';
+            productInput.value = ''; qtyInput.value = '';
         }
 
         function checkEmpty(listId, emptyId) {
@@ -421,10 +433,9 @@
             const approveBtn = document.getElementById('btn-approve');
             const regenerateBtn = document.getElementById('btn-regenerate');
 
-            clearInterval(countdownInterval); // Stop timer if running
+            clearInterval(countdownInterval);
 
             if (mode === 'Cash') {
-                // Hide QR elements, show Direct Approve
                 qrContainer.style.display = 'none';
                 timerContainer.classList.add('hidden');
                 generateBtn.classList.add('hidden');
@@ -433,7 +444,6 @@
                 approveBtn.classList.remove('hidden');
                 approveBtn.textContent = "Process Cash Payment";
             } else {
-                // Reset to UPI QR setup
                 qrContainer.style.display = 'flex';
                 generateBtn.classList.remove('hidden');
                 approveBtn.classList.add('hidden');
@@ -488,7 +498,6 @@
                 minutes = minutes < 10 ? "0" + minutes : minutes;
                 seconds = seconds < 10 ? "0" + seconds : seconds;
                 display.textContent = minutes + ":" + seconds;
-
                 if (--timer < 0) expireQR();
             }, 1000);
         }
@@ -523,10 +532,11 @@
 
             const paymentMode = document.getElementById('payment-mode').value;
             const upiSelect = document.getElementById('upi-selector');
+            const purposeInput = document.getElementById('payment-purpose').value.trim();
             const upiValue = upiSelect.value;
             const [upiID, payeeName] = upiValue.split('|');
             
-            // 1. Dynamic Letterhead Logic Based on Selected Business
+            // 1. Dynamic Letterhead Logic
             const challanTitle = document.getElementById('challan-title');
             const challanFooterMsg = document.getElementById('challan-footer-msg');
             
@@ -549,18 +559,20 @@
             
             document.getElementById('challan-date').textContent = now.toLocaleString();
             document.getElementById('challan-receipt').textContent = receiptNo;
-            
-            // Strictly sets the invoice to "Cash" or "UPI QR" based on portal selection
             document.getElementById('challan-mode').textContent = paymentMode; 
+            
+            // 4. Set Purpose Data
+            document.getElementById('challan-purpose').textContent = purposeInput ? purposeInput : "N/A";
             
             document.getElementById('challan-amount').textContent = parseFloat(amount).toFixed(2);
 
-            // 4. Wait 3 seconds, hide overlay, print challan, and reset UI
+            // 5. Wait 3 seconds, hide overlay, print challan, and reset UI
             setTimeout(() => {
                 document.getElementById('success-overlay').classList.add('hidden');
                 
                 // Reset the portal UI seamlessly
                 document.getElementById('bill-amount').value = '';
+                document.getElementById('payment-purpose').value = '';
                 togglePaymentMode(); 
 
                 window.print(); 
